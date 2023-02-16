@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orillusion Webgpu Samples</title>
+    <style>
+      html,
+      body {
+        font-family: Avenir, Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+      }
+      .menu {
+        width: 200px;
+        height: 100%;
+        border-right: 1px solid #888;
+        overflow: auto;
+        padding: 0 10px;
+      }
+      .menu > a {
+        display: block;
+        margin: 5px 0;
+        color: #045b88;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      a.active {
+        color: red;
+      }
+      iframe {
+        flex-grow: 1;
+        border: none;
+      }
+      .src {
+        position: fixed;
+        right: 10px;
+        bottom: 10px;
+        height: 40px;
+        width: 40px;
+        background: #fff;
+        text-align: center;
+        font-size: 16px;
+        line-height: 40px;
+        border-radius: 50%;
+        border: none;
+        opacity: 0.6;
+        cursor: pointer;
+        text-decoration: none !important;
+      }
+      .src:hover {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="menu">
+      <h3>WebGPU Samples</h3>
+      <hr />
+      <a class="sample active" target="helloWebgpu">Hello WebGPU</a>
+      <a class="sample" target="basicTriangle">basicTriangle</a>
+      <a class="sample" target="colorTriangle">colorTriangle</a>
+      <a class="sample" target="rotatingCube">rotatingCube</a>
+      <a class="sample" target="cubes">cubes</a>
+      <a class="sample" target="cubesOffset">cubesOffset</a>
+      <a class="sample" target="cubesDynamicOffsets">cubesDynamicOffsets</a>
+      <a class="sample" target="cubesInstance">cubesInstance</a>
+      <a class="sample" target="imageTexture">imageTexture</a>
+      <a class="sample" target="canvasTexture">canvasTexture</a>
+      <a class="sample" target="basicLights">basicLights</a>
+    </div>
+    <iframe></iframe>
+    <script>
+      const iframe = document.querySelector('iframe')
+      const samples = document.querySelectorAll('.sample')
+      for (let sample of samples) {
+        sample.addEventListener('click', () => {
+          window.location.hash = sample.target
+          iframe.src = './samples/' + sample.target + '.html'
+          document.querySelector('.active').classList.remove('active')
+          sample.classList.add('active')
+        })
+      }
+      if (window.location.hash) document.querySelector(`[target=${window.location.hash.slice(1)}]`).click()
+      else document.querySelector('.sample.active').click()
+    </script>
+  </body>
+</html>
