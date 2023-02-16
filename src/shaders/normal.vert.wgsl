@@ -26,7 +26,8 @@ fn main(
 
   output.Position = mvp * position;
   output.fragPosition = 0.5 * (position + vec4<f32>(1.0, 1.0, 1.0, 1.0));
-  output.fragNormal = normal;
+  output.fragNormal =  (modelView * vec4<f32>(normal, 0.0)).xyz;
+  //output.fragNormal = (normalMatrix * vec4<f32>(normal, 1.0)).xyz;
   output.fragUV = uv;
   output.fragColor = colors[index];
   

@@ -142,7 +142,7 @@ async function initPipeline(device: GPUDevice, format: GPUTextureFormat, size: {
   })
 
   const normalBuffer = device.createBuffer({
-    label: 'normal buffer',
+    label: 'normal matrix',
     size: 4 * 4 * 4 * NUM,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
   })
@@ -178,6 +178,37 @@ async function initPipeline(device: GPUDevice, format: GPUTextureFormat, size: {
     ],
   })
 
+  const ambientBuffer = device.createBuffer({
+    label: 'ambient buffer',
+    size: 4 * 1, // 1 x float32: intensity f32
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  })
+
+  const directionBuffer = device.createBuffer({
+    label: 'direction buffer',
+    size: 4 * 4 * 2,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  })
+
+  const lightGroup = device.createBindGroup({
+    label: 'light group',
+    layout: pipeline.getBindGroupLayout(1),
+    entries: [
+      {
+        binding: 0,
+        resource: {
+          buffer: ambientBuffer,
+        },
+      },
+      {
+        binding: 1,
+        resource: {
+          buffer: directionBuffer,
+        },
+      },
+    ],
+  })
+
   return {
     pipeline,
     boxBuffer,
@@ -187,6 +218,9 @@ async function initPipeline(device: GPUDevice, format: GPUTextureFormat, size: {
     colorBuffer,
     normalBuffer,
     vsGroup,
+    ambientBuffer,
+    directionBuffer,
+    lightGroup,
     depthTexture,
     depthView,
   }
@@ -203,6 +237,9 @@ function draw(
     projectionBuffer: GPUBuffer
     normalBuffer: GPUBuffer
     vsGroup: GPUBindGroup
+    ambientBuffer: GPUBuffer
+    directionBuffer: GPUBuffer
+    lightGroup: GPUBindGroup
     depthView: GPUTextureView
   }
 ) {
@@ -227,6 +264,7 @@ function draw(
   const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor)
   passEncoder.setPipeline(pipeLineEntity.pipeline)
   passEncoder.setBindGroup(0, pipeLineEntity.vsGroup)
+  passEncoder.setBindGroup(1, pipeLineEntity.lightGroup)
 
   passEncoder.setVertexBuffer(0, pipeLineEntity.boxBuffer.vertex)
   passEncoder.setIndexBuffer(pipeLineEntity.boxBuffer.index, 'uint16')
@@ -275,13 +313,33 @@ async function run() {
   device.queue.writeBuffer(pipeLineEntity.colorBuffer, 0, colorBufferArray)
   device.queue.writeBuffer(pipeLineEntity.normalBuffer, 0, normalBufferArray)
 
+  const ambient = new Float32Array([0.1])
+  const directionalLight = new Float32Array(8)
+  directionalLight[4] = 0.5
+
   function frame() {
+    const now = performance.now()
+
+    directionalLight[0] = Math.sin(now / 1500)
+    directionalLight[2] = Math.cos(now / 1500)
+
+    device.queue.writeBuffer(pipeLineEntity.ambientBuffer, 0, ambient)
+    device.queue.writeBuffer(pipeLineEntity.directionBuffer, 0, directionalLight)
+
     draw(device, context, pipeLineEntity)
 
     requestAnimationFrame(frame)
   }
 
   frame()
+
+  document.querySelector('#ambient')?.addEventListener('input', (e: Event) => {
+    ambient[0] = +(e.target as HTMLInputElement).value
+  })
+
+  document.querySelector('#dir')?.addEventListener('input', (e: Event) => {
+    directionalLight[4] = +(e.target as HTMLInputElement).value
+  })
 
   function updateCamera() {
     const aspectRatio = size.width / size.height
