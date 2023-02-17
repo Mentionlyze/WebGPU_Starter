@@ -184,6 +184,12 @@ async function initPipeline(device: GPUDevice, format: GPUTextureFormat, size: {
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   })
 
+  const pointLightBuffer = device.createBuffer({
+    label: 'point light',
+    size: 4 * 4 * 2,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  })
+
   const directionBuffer = device.createBuffer({
     label: 'direction buffer',
     size: 4 * 4 * 2,
@@ -203,6 +209,12 @@ async function initPipeline(device: GPUDevice, format: GPUTextureFormat, size: {
       {
         binding: 1,
         resource: {
+          buffer: pointLightBuffer,
+        },
+      },
+      {
+        binding: 2,
+        resource: {
           buffer: directionBuffer,
         },
       },
@@ -219,6 +231,7 @@ async function initPipeline(device: GPUDevice, format: GPUTextureFormat, size: {
     normalBuffer,
     vsGroup,
     ambientBuffer,
+    pointLightBuffer,
     directionBuffer,
     lightGroup,
     depthTexture,
@@ -238,6 +251,7 @@ function draw(
     normalBuffer: GPUBuffer
     vsGroup: GPUBindGroup
     ambientBuffer: GPUBuffer
+    pointLightBuffer: GPUBuffer
     directionBuffer: GPUBuffer
     lightGroup: GPUBindGroup
     depthView: GPUTextureView
@@ -314,16 +328,27 @@ async function run() {
   device.queue.writeBuffer(pipeLineEntity.normalBuffer, 0, normalBufferArray)
 
   const ambient = new Float32Array([0.1])
+
+  const pointLight = new Float32Array(8)
+  pointLight[2] = -50
+  pointLight[4] = 1
+  pointLight[5] = 20
+
   const directionalLight = new Float32Array(8)
   directionalLight[4] = 0.5
 
   function frame() {
     const now = performance.now()
 
+    pointLight[0] = 10 * Math.sin(now / 1000)
+    pointLight[1] = 10 * Math.cos(now / 1000)
+    pointLight[2] = -60 + 10 * Math.cos(now / 1000)
+
     directionalLight[0] = Math.sin(now / 1500)
     directionalLight[2] = Math.cos(now / 1500)
 
     device.queue.writeBuffer(pipeLineEntity.ambientBuffer, 0, ambient)
+    device.queue.writeBuffer(pipeLineEntity.pointLightBuffer, 0, pointLight)
     device.queue.writeBuffer(pipeLineEntity.directionBuffer, 0, directionalLight)
 
     draw(device, context, pipeLineEntity)
@@ -335,6 +360,14 @@ async function run() {
 
   document.querySelector('#ambient')?.addEventListener('input', (e: Event) => {
     ambient[0] = +(e.target as HTMLInputElement).value
+  })
+
+  document.querySelector('#point')?.addEventListener('input', (e: Event) => {
+    pointLight[4] = +(e.target as HTMLInputElement).value
+  })
+
+  document.querySelector('#radius')?.addEventListener('input', (e: Event) => {
+    pointLight[5] = +(e.target as HTMLInputElement).value
   })
 
   document.querySelector('#dir')?.addEventListener('input', (e: Event) => {
